@@ -9,7 +9,7 @@ load_dotenv()
 Base = declarative_base()
 engine = create_engine(os.getenv('DB_URL'), echo=True)
 
-Session = sessionmaker(engine, autoflush=False, autocommit=False)
+Session = sessionmaker(engine, autoflush=False)
 
 
 def get_db():
