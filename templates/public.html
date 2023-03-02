@@ -6,8 +6,13 @@
 </head>
 <body>
 
-    <h1>welcome</h1>
-    {{ request.state.user }}
+<h1>Public</h1>
+
+{% if request.state.user %}
+{{ request.state.user.email }}
+{% else %}
+    not found
+{% endif %}
 
 </body>
 </html>

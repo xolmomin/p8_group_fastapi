@@ -75,11 +75,10 @@ class LoginForm(BaseModel):
         user: models.Users = db.query(models.Users).filter(models.Users.email == self.email).first()
         if not user:
             errors.append('User not found!')
-
-        if not Hasher.verify_password(user.password, self.password):
+        elif not Hasher.verify_password(self.password, user.password):
             errors.append('Password does not match!')
 
-        return errors
+        return errors, user
 
     @classmethod
     def as_form(

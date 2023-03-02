@@ -1,18 +1,65 @@
-from random import choice
+import base64
+import binascii
+import typing
 
 import uvicorn
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-# from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.staticfiles import StaticFiles
+from starlette.responses import RedirectResponse
 
+from aiohttp import web
+from aiohttp_session import get_session, setup
+from aiohttp_session.cookie_storage import EncryptedCookieStorage
+from fastapi import FastAPI
+from fastapi.security import HTTPBasicCredentials
+from starlette.authentication import AuthenticationBackend, AuthenticationError, SimpleUser, AuthCredentials
+from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.requests import HTTPConnection, Request
+from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 from apps.routers import api, auth
 from apps import models
+from config import manager
 from database import engine, get_db
 
-from faker import Faker
+#
+# class BasicAuthBackend(AuthenticationBackend):
+#     async def authenticate(self, conn: HTTPConnection) -> typing.Optional[typing.Tuple["AuthCredentials", "BaseUser"]]:
+#         if "Authorization" not in conn.headers:
+#             return
+#
+#         auth = conn.headers["Authorization"]
+#         try:
+#             scheme, credentials = auth.split()
+#             if scheme.lower() != 'basic':
+#                 return
+#             decoded = base64.b64decode(credentials).decode("ascii")
+#         except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
+#             raise AuthenticationError('Invalid basic auth credentials')
+#
+#         username, _, password = decoded.partition(":")
+#         # TODO: You'd want to verify the username and password here.
+#         return AuthCredentials(["authenticated"]), SimpleUser(username)
+#
 
 app = FastAPI()
+manager.useRequest(app)
+
+class NotAuthenticatedException(Exception):
+    pass
+
+# these two argument are mandatory
+def exc_handler(request, exc):
+    return RedirectResponse(url='/public')
+
+# This will be deprecated in the future
+# set your exception when initiating the instance
+# manager = LoginManager(..., custom_exception=NotAuthenticatedException)
+manager.not_authenticated_exception = NotAuthenticatedException
+# You also have to add an exception handler to your app instance
+app.add_exception_handler(NotAuthenticatedException, exc_handler)
+
+# app.add_middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
 
 app.mount("/static", StaticFiles(directory='static'), name='static')
 app.mount("/media", StaticFiles(directory='media'), name='media')
@@ -20,7 +67,6 @@ app.mount("/media", StaticFiles(directory='media'), name='media')
 
 @app.on_event("startup")
 def startup():
-    # app.add_middleware(AuthenticationMiddleware())  # Add the middleware with your verification method to the whole application
     pass
     # db = next(get_db())
     # models.Base.metadata.drop_all(engine)

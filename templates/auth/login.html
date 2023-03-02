@@ -12,12 +12,12 @@
                         href="{{ url_for('register') }}">Create an account</a></span>
                 </div>
             </div>
-            <form>
+            <form action="{{ url_for('login') }}" method="post">
                 <div class="mb-3">
-                    <input class="form-control" type="email" placeholder="Email address"/>
+                    <input class="form-control" type="email" placeholder="Email address" name="email" required/>
                 </div>
                 <div class="mb-3">
-                    <input class="form-control" type="password" placeholder="Password"/>
+                    <input class="form-control" type="password" placeholder="Password" name="password" required/>
                 </div>
                 <div class="row flex-between-center">
                     <div class="col-auto">
