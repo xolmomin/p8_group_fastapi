@@ -1,28 +1,20 @@
-import json
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from time import time
 
 from fastapi import APIRouter, Request, Depends, Response
-from fastapi_login.exceptions import InvalidCredentialsException
-from sqlalchemy import select, update, delete, desc, func
 from sqlalchemy.orm import Session
 from starlette import status
-from starlette.authentication import BaseUser
+from starlette.background import BackgroundTasks
 from starlette.responses import RedirectResponse
-from starlette.templating import Jinja2Templates
-import shutil
-from apps import models
+
 from apps import forms
-from config import templates
-from database import get_db
+from apps import models
 from config import manager
+from config import templates, settings
+from database import get_db
 
 auth = APIRouter()
-
-
-@manager.user_loader()
-def load_user(email: str):
-    db = next(get_db())
-    user = db.query(models.Users).where(models.Users.email == email).first()
-    return user
 
 
 @auth.get('/login', name='login')
@@ -76,14 +68,36 @@ def register_page(request: Request):
     return templates.TemplateResponse('auth/register.html', context)
 
 
+def send_email(to_email: str, name: str) -> None:
+    import smtplib
+    message = MIMEMultipart()
+    message['Subject'] = 'Registration'
+    message['From'] = settings.SMTP_EMAIL
+    message['To'] = to_email
+    html = f"""\
+    <html>
+      <body>
+      <p>
+      Hi {name} \n
+      Your verify code 👇
+      <h1><b>12362517</b></h1>
+      </p>
+    </html>
+    """
+    message.attach(MIMEText(html, 'html'))
+    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+        server.login(settings.SMTP_EMAIL, settings.SMTP_PASSWORD)
+        server.send_message(message)
+    print('Send EMail Message')
+
+
 @auth.post('/register', name='register')
 def register_page(
         request: Request,
+        background_task: BackgroundTasks,
         form: forms.RegisterForm = Depends(forms.RegisterForm.as_form),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
 ):
-    db = next(get_db())
-
     if errors := form.is_valid(db):
         context = {
             'errors': errors,
@@ -92,10 +106,29 @@ def register_page(
         return templates.TemplateResponse('auth/register.html', context)
     else:
         data = form.dict(exclude_none=True)
+        background_task.add_task(send_email, data['email'], data['name'])
         user = models.Users(**data)
         db.add(user)
-        context = {
-            'request': request
-        }
-        # TODO to finish
-        return RedirectResponse('')
+        db.commit()
+        return RedirectResponse('/login', status.HTTP_303_SEE_OTHER)
+
+
+# https://localhost:8000/e26781dguc62gug176dg716gs7126s6712g
+
+'''
+
+author product qoshish joyida
+
+activate user, forgot password
+product images,
+product detail
+
+profile update
+profile page
+
+cart page bolishi kk ishlashi ham kk
+
+product-list pagination
+not found 404 page
+
+'''

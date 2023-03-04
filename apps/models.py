@@ -1,21 +1,10 @@
-from sqlalchemy import Table, Boolean
 import typing as t
 
+from sqlalchemy import Boolean, Numeric, SmallInteger, text
 from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy import Table
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
-from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import relationship
-
-from database import Base
-
-# company_employee_table = Table(
-#     "company_employee_table",
-#     Base.metadata,
-#     Column("id", Integer, primary_key=True),
-#     Column("company_id", Integer, ForeignKey("company.id", ondelete='CASCADE'), nullable=False),
-#     Column("employee_id", Integer, ForeignKey("employee.id", ondelete='CASCADE'), nullable=False)
-# )
 
 class_registry: t.Dict = {}
 
@@ -38,6 +27,27 @@ class Users(Base):
     is_active: str = Column(Boolean, default=False)
     password: str = Column(String(255))
 
+
+class Category(Base):
+    id: int = Column(Integer, primary_key=True)
+    name: str = Column(String(50), nullable=False)
+    products = relationship('Product', back_populates='category')
+
+
+class Product(Base):
+    id: int = Column(Integer, primary_key=True)
+    name: str = Column(String(50), nullable=False)
+    price: float = Column(Numeric(9, 2), nullable=False)
+    discount: int = Column(SmallInteger, server_default=text('0'))
+    description: str = Column(String(512))
+    specifications: dict = Column(JSONB, server_default=text("'{}'::jsonb"))
+    category_id: int = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), nullable=False)
+    category = relationship('Category', back_populates='products')
+
+    @property
+    def discount_price(self):
+        return self.price - round(self.price * self.discount / 100, 2)
+
 #
 # class Company(Base):
 #     id: int = Column(Integer, primary_key=True)
@@ -48,6 +58,7 @@ class Users(Base):
 #         back_populates="companies",
 #         cascade="all, delete"
 #     )
+
 
 #
 # class Position(Base):

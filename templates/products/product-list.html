@@ -1,0 +1,107 @@
+{% extends 'products/base.html' %}
+
+{% block title %}
+    Product List
+{% endblock %}
+
+
+{% block main_content %}
+    <div class="card">
+        <div class="card-body p-0 overflow-hidden">
+            <div class="row g-0">
+
+                {% for product in products %}
+                    <div class="col-12 p-card">
+                        <div class="row">
+                            <div class="col-sm-5 col-md-4">
+                                <div class="position-relative h-sm-100">
+                                    <a class="d-block h-100" href="{{ url_for('product_detail', pk=1) }}">
+                                        <img class="img-fluid fit-cover w-sm-100 h-sm-100 rounded-1 absolute-sm-centered"
+                                             src="{{ url_for('static', path='assets/img/products/2.jpg') }}"
+                                             alt=""/>
+                                    </a>
+                                    <div class="badge rounded-pill bg-success position-absolute top-0 end-0 me-2 mt-2 fs--2 z-index-2">
+                                        New
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-7 col-md-8">
+                                <div class="row">
+                                    <div class="col-lg-8">
+                                        <h5 class="mt-3 mt-sm-0">
+                                            <a class="text-dark fs-0 fs-lg-1"
+                                               href="{{ url_for('product_detail', pk=product.id) }}">
+                                                {{ product.name }}
+                                            </a>
+                                        </h5>
+                                        <p class="fs--1 mb-2 mb-md-3">
+                                            <a class="text-500" href="#!">
+                                                {{ product.category.name }}
+                                            </a>
+                                        </p>
+                                        <ul class="list-unstyled d-none d-lg-block">
+                                            {% for value in product.specifications.values() %}
+                                                <li>
+                                                            <span class="fas fa-circle" data-fa-transform="shrink-12">
+                                                            </span>
+                                                    <span>{{ value }}</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    <div class="col-lg-4 d-flex justify-content-between flex-column">
+                                        <div>
+                                            <h4 class="fs-1 fs-md-2 text-warning mb-0">
+                                                ${{ product.discount_price }}</h4>
+                                            <h5 class="fs--1 text-500 mb-0 mt-1">
+                                                <del>${{ product.price }}</del>
+                                                <span class="ms-1">-{{ product.discount }}%</span>
+                                            </h5>
+                                            <div class="mb-2 mt-3"><span
+                                                    class="fa fa-star text-warning"></span><span
+                                                    class="fa fa-star text-warning"></span><span
+                                                    class="fa fa-star text-warning"></span><span
+                                                    class="fa fa-star text-warning"></span><span
+                                                    class="fa fa-star text-300"></span><span
+                                                    class="ms-1">(8)</span>
+                                            </div>
+                                            <div class="d-none d-lg-block">
+                                                <p class="fs--1 mb-1">Shipping Cost: <strong>$50</strong></p>
+                                                <p class="fs--1 mb-1">Stock: <strong
+                                                        class="text-success">Available</strong>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2"><a
+                                                class="btn btn-sm btn-outline-secondary border-300 d-lg-block me-2 me-lg-0"
+                                                href="#!"><span class="far fa-heart"></span><span
+                                                class="ms-2 d-none d-md-inline-block">Favourite</span></a><a
+                                                class="btn btn-sm btn-primary d-lg-block mt-lg-2"
+                                                href="#!"><span
+                                                class="fas fa-cart-plus"> </span><span
+                                                class="ms-2 d-none d-md-inline-block">Add to Cart</span></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        <div class="card-footer border-top d-flex justify-content-center">
+            <button class="btn btn-falcon-default btn-sm me-2" type="button" disabled="disabled"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="Prev"><span
+                    class="fas fa-chevron-left"></span></button>
+            <a class="btn btn-sm btn-falcon-default text-primary me-2" href="#!">1</a><a
+                class="btn btn-sm btn-falcon-default me-2" href="#!">2</a><a
+                class="btn btn-sm btn-falcon-default me-2" href="#!"><span class="fas fa-ellipsis-h"></span></a><a
+                class="btn btn-sm btn-falcon-default me-2" href="#!">35</a>
+            <button class="btn btn-falcon-default btn-sm" type="button" data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Next"><span class="fas fa-chevron-right"></span></button>
+        </div>
+    </div>
+{% endblock %}
+
+

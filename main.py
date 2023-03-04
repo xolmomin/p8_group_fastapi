@@ -1,24 +1,13 @@
-import base64
-import binascii
-import typing
+from random import choice
 
 import uvicorn
-from starlette.responses import RedirectResponse
-
-from aiohttp import web
-from aiohttp_session import get_session, setup
-from aiohttp_session.cookie_storage import EncryptedCookieStorage
+from faker import Faker
 from fastapi import FastAPI
-from fastapi.security import HTTPBasicCredentials
-from starlette.authentication import AuthenticationBackend, AuthenticationError, SimpleUser, AuthCredentials
-from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.requests import HTTPConnection, Request
-from starlette.responses import Response
+from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
-from apps.routers import api, auth
+
 from apps import models
+from apps.routers import api, auth, product_api
 from config import manager
 from database import engine, get_db
 
@@ -45,12 +34,22 @@ from database import engine, get_db
 app = FastAPI()
 manager.useRequest(app)
 
+
 class NotAuthenticatedException(Exception):
     pass
 
+
 # these two argument are mandatory
 def exc_handler(request, exc):
-    return RedirectResponse(url='/public')
+    return RedirectResponse(url='/login')
+
+
+@manager.user_loader()
+def load_user(email: str):
+    db = next(get_db())
+    user = db.query(models.Users).where(models.Users.email == email).first()
+    return user
+
 
 # This will be deprecated in the future
 # set your exception when initiating the instance
@@ -67,45 +66,42 @@ app.mount("/media", StaticFiles(directory='media'), name='media')
 
 @app.on_event("startup")
 def startup():
-    pass
+    app.include_router(api)
+    app.include_router(auth)
+    app.include_router(product_api)
+    # #
     # db = next(get_db())
-    # models.Base.metadata.drop_all(engine)
-    # models.Base.metadata.create_all(engine)
-    # p1 = models.Position(name='Full Developer')
-    # p2 = models.Position(name='Frontend')
-    # positions = [p2, p1]
-    # db.add_all(positions)
-    # db.commit()
-    #
+    # # models.Base.metadata.drop_all(engine)
+    # # models.Base.metadata.create_all(engine)
+    # #
     # fake = Faker()
-    # data = []
+    # categories = []
+    # for _ in range(5):
+    #     categories.append(models.Category(name=fake.name()))
     #
-    # e1 = models.Employee(
-    #     name=fake.name(),
-    #     email=fake.email(),
-    #     address=fake.address(),
-    #     phone=fake.msisdn(),
-    #     position_id=choice(positions).id
-    # )
-    # c1 = models.Company(name='PDP', employees=[e1])
-    # c2 = models.Company(name='Company 2')
-    # db.add_all([c1, c2])
+    # db.add_all(categories)
     # db.commit()
-    # e1.companies
-    # for _ in range(15):
-    #     data.append(models.Employee(
+    #
+    # products = []
+    # data = {
+    #     "Processor": "2.3GHz quad-core Intel Core i5",
+    #     "Memory": "8GB of 2133MHz LPDDR3 onboard memory",
+    #     "Brand Name": "Apple",
+    #     "Model": "Mac Book Pro",
+    #     "Finish": "Silver, Space Gray"
+    # }
+    # for _ in range(25):
+    #     products.append(models.Product(
     #         name=fake.name(),
-    #         email=fake.email(),
-    #         address=fake.address(),
-    #         phone=fake.msisdn(),
-    #         position_id=choice(positions).id
+    #         price=float(fake.numerify()),
+    #         description=fake.sentence(),
+    #         specifications=data,
+    #         category_id=choice(categories).id
     #     ))
-    # db.add_all(data)
+    #
+    # db.add_all(products)
     # db.commit()
 
-
-app.include_router(api)
-app.include_router(auth)
 
 if __name__ == '__main__':
     uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)

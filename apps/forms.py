@@ -87,3 +87,20 @@ class LoginForm(BaseModel):
             password: str = Form(...),
     ):
         return cls(email=email, password=password)
+
+
+class ProductForm(BaseModel):
+    name: str
+    description: str
+    price: float
+    category_id: int
+
+    @classmethod
+    def as_form(
+            cls,
+            name: str = Form(...),
+            description: str = Form(...),
+            price: str = Form(...),
+            category_id: int = Form(...),
+    ):
+        return cls(name=name, description=description, price=price, category_id=category_id)

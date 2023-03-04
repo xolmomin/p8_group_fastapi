@@ -1,0 +1,40 @@
+{% extends 'products/base.html' %}
+
+{% block title %}
+    Product Detail
+{% endblock %}
+
+{% block main_content %}
+
+    <div class="card mb-3">
+
+        <form action="{{ url_for('product_add') }}" method="post" enctype="multipart/form-data">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label" for="exampleFormControlInput1">Name</label>
+                        <input class="form-control" id="exampleFormControlInput1" type="text" name="name"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="exampleFormControlInput1">Price</label>
+                        <input class="form-control" id="exampleFormControlInput1" type="number" name="price"/>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="exampleFormControlInput1">Category id</label>
+                        <input class="form-control" id="exampleFormControlInput1" type="number" name="category_id"/>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlTextarea1">Description</label>
+                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"
+                              name="description"></textarea>
+                </div>
+                <div class="offset-10 col-2">
+                    <button class="btn btn-primary" type="submit">Add product</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+{% endblock %}
