@@ -1,5 +1,9 @@
+import os
+import shutil
+
 from fastapi import APIRouter, Request, Depends
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTasks
 
 from apps import models
 from apps.forms import ProductForm
@@ -36,16 +40,38 @@ async def private_page(request: Request, current_user=Depends(manager)):
     return templates.TemplateResponse('products/product-add.html', context)
 
 
+def save_image(images, product_id, db: Session):
+    if isinstance(images, list):
+        images_list = []
+        for image in images:
+            if len(image.filename):
+                folder = 'media/product/'
+                if not os.path.exists(folder):
+                    os.mkdir(folder)
+                file_url = folder + image.filename
+                with open(file_url, "wb") as buffer:
+                    shutil.copyfileobj(image.file, buffer)
+                    images_list.append(models.ProductImage(product_id=product_id, image=file_url))
+
+        db.add_all(images_list)
+        db.commit()
+
+
 @product_api.post('/add', name='product_add')
 async def product_add(
         request: Request,
+        bg_task: BackgroundTasks,
         form: ProductForm = Depends(ProductForm.as_form),
         db: Session = Depends(get_db),
         current_user=Depends(manager)
 ):
     data = form.dict(exclude_none=True)
-    db.add(models.Product(**data))
+    images = data.pop('images')
+    data.update({'author_id': current_user.id})
+    product = models.Product(**data)
+    db.add(product)
     db.commit()
+    save_image(images, product.id, db)
     context = {
         'request': request,
     }

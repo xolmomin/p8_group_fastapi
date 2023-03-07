@@ -1,11 +1,8 @@
 import re
-from typing import Any
 
-from fastapi import Form, File, UploadFile, HTTPException
-from pydantic import BaseModel, validator
+from fastapi import Form, File, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from starlette import status
 
 from apps import models
 from apps.hashing import Hasher
@@ -94,6 +91,7 @@ class ProductForm(BaseModel):
     description: str
     price: float
     category_id: int
+    images: list[UploadFile]
 
     @classmethod
     def as_form(
@@ -102,5 +100,6 @@ class ProductForm(BaseModel):
             description: str = Form(...),
             price: str = Form(...),
             category_id: int = Form(...),
+            images: list[UploadFile] = File(...)
     ):
-        return cls(name=name, description=description, price=price, category_id=category_id)
+        return cls(name=name, description=description, price=price, category_id=category_id, images=images)

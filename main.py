@@ -3,14 +3,15 @@ from random import choice
 import uvicorn
 from faker import Faker
 from fastapi import FastAPI
-from sqlalchemy import update
+from starlette import status
+from starlette.exceptions import HTTPException
 from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 from apps import models
 from apps.routers import api, auth, product_api
-from config import manager
-from database import engine, get_db
+from config import manager, templates
+from database import get_db, engine
 
 #
 # class BasicAuthBackend(AuthenticationBackend):
@@ -36,15 +37,6 @@ app = FastAPI()
 manager.useRequest(app)
 
 
-class NotAuthenticatedException(Exception):
-    pass
-
-
-# these two argument are mandatory
-def exc_handler(request, exc):
-    return RedirectResponse(url='/login')
-
-
 @manager.user_loader()
 def load_user(email: str):
     db = next(get_db())
@@ -52,12 +44,21 @@ def load_user(email: str):
     return user
 
 
-# This will be deprecated in the future
-# set your exception when initiating the instance
-# manager = LoginManager(..., custom_exception=NotAuthenticatedException)
-manager.not_authenticated_exception = NotAuthenticatedException
-# You also have to add an exception handler to your app instance
-app.add_exception_handler(NotAuthenticatedException, exc_handler)
+class NotAuthenticatedException(Exception):
+    pass
+
+
+def exc_handler(request, exc):
+    return RedirectResponse(url='/login')
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request, exc):
+    return templates.TemplateResponse('errors/404.html', {"request": request}, status.HTTP_404_NOT_FOUND)
+
+
+# manager.not_authenticated_exception = NotAuthenticatedException
+# app.add_exception_handler(NotAuthenticatedException, exc_handler)
 
 # app.add_middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
 
@@ -72,13 +73,13 @@ def startup():
     app.include_router(product_api)
 
     # db = next(get_db())
-    # query = update(models.Users).where(models.Users.id == 1).values(name='123')
-    # db.execute(query)
-    # db.commit()
-
+    # # query = update(models.Users).where(models.Users.id == 1).values(name='123')
+    # # db.execute(query)
+    # # db.commit()
+    #
     # models.Base.metadata.drop_all(engine)
     # models.Base.metadata.create_all(engine)
-
+    #
     # fake = Faker()
     # categories = []
     # for _ in range(5):

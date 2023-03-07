@@ -27,6 +27,8 @@ class Users(Base):
     email: str = Column(String(50), unique=True)
     is_active: str = Column(Boolean, default=False)
     password: str = Column(String(255))
+    products = relationship('Product', back_populates='author')
+
     updated_at: datetime = Column(DateTime, onupdate=datetime.now)
     created_at: datetime = Column(DateTime, server_default=func.now())
 
@@ -44,12 +46,25 @@ class Product(Base):
     discount: int = Column(SmallInteger, server_default=text('0'))
     description: str = Column(String(512))
     specifications: dict = Column(JSONB, server_default=text("'{}'::jsonb"))
+
+    author_id: int = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
+    author = relationship('Users', back_populates='products')
+
     category_id: int = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), nullable=False)
     category = relationship('Category', back_populates='products')
+
+    images = relationship('ProductImage', back_populates='product')
 
     @property
     def discount_price(self):
         return self.price - round(self.price * self.discount / 100, 2)
+
+
+class ProductImage(Base):
+    id: int = Column(Integer, primary_key=True)
+    image: str = Column(String(255))
+    product_id: int = Column(Integer, ForeignKey('product.id', ondelete='CASCADE'), nullable=False)
+    product = relationship('Product', back_populates='images')
 
 #
 # class Company(Base):
