@@ -60,7 +60,6 @@ def save_image(images, product_id, db: Session):
 @product_api.post('/add', name='product_add')
 async def product_add(
         request: Request,
-        bg_task: BackgroundTasks,
         form: ProductForm = Depends(ProductForm.as_form),
         db: Session = Depends(get_db),
         current_user=Depends(manager)

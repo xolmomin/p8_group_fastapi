@@ -29,6 +29,7 @@ def __base36_to_int(s):
         raise ValueError("Base36 input too large")
     return int(s, 36)
 
+
 def _salted_hmac(key_salt, value, secret, *, algorithm="sha256"):
     key_salt = key_salt.encode('utf-8')
     secret = secret.encode('utf-8')

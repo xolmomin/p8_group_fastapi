@@ -118,4 +118,8 @@ favorite page bolishi kk ishlashi ham kk
 product-list pagination
 not found 404 page
 
+
+celery, redis
+
+
 '''
