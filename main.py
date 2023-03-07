@@ -3,6 +3,7 @@ from random import choice
 import uvicorn
 from faker import Faker
 from fastapi import FastAPI
+from sqlalchemy import update
 from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
@@ -47,7 +48,7 @@ def exc_handler(request, exc):
 @manager.user_loader()
 def load_user(email: str):
     db = next(get_db())
-    user = db.query(models.Users).where(models.Users.email == email).first()
+    user = db.query(models.Users).where(models.Users.email == email, models.Users.is_active).first()
     return user
 
 
@@ -69,11 +70,15 @@ def startup():
     app.include_router(api)
     app.include_router(auth)
     app.include_router(product_api)
-    # #
+
     # db = next(get_db())
-    # # models.Base.metadata.drop_all(engine)
-    # # models.Base.metadata.create_all(engine)
-    # #
+    # query = update(models.Users).where(models.Users.id == 1).values(name='123')
+    # db.execute(query)
+    # db.commit()
+
+    # models.Base.metadata.drop_all(engine)
+    # models.Base.metadata.create_all(engine)
+
     # fake = Faker()
     # categories = []
     # for _ in range(5):

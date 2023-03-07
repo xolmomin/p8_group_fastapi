@@ -1,17 +1,12 @@
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from time import time
-
 from fastapi import APIRouter, Request, Depends, Response
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.background import BackgroundTasks
 from starlette.responses import RedirectResponse
 
-from apps import forms
-from apps import models
-from config import manager
-from config import templates, settings
+from apps import forms, models
+from apps.utils.token import send_email, make_token
+from config import manager, templates
 from database import get_db
 
 auth = APIRouter()
@@ -50,7 +45,7 @@ def auth_login(
 
         # user = load_user(form.email)
         if not user or form.password != user.password:
-            RedirectResponse("/login", status.HTTP_302_FOUND)
+            return RedirectResponse("/login", status.HTTP_302_FOUND)
 
         access_token = manager.create_access_token(
             data={"sub": user.email}
@@ -61,34 +56,14 @@ def auth_login(
 
 
 @auth.get('/register', name='register')
-def register_page(request: Request):
+def register_page(request: Request, db: Session = Depends(get_db), ):
+    user = db.query(models.Users).first()
+    token = make_token(user)
+    print(token)
     context = {
         'request': request
     }
     return templates.TemplateResponse('auth/register.html', context)
-
-
-def send_email(to_email: str, name: str) -> None:
-    import smtplib
-    message = MIMEMultipart()
-    message['Subject'] = 'Registration'
-    message['From'] = settings.SMTP_EMAIL
-    message['To'] = to_email
-    html = f"""\
-    <html>
-      <body>
-      <p>
-      Hi {name} \n
-      Your verify code 👇
-      <h1><b>12362517</b></h1>
-      </p>
-    </html>
-    """
-    message.attach(MIMEText(html, 'html'))
-    with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-        server.login(settings.SMTP_EMAIL, settings.SMTP_PASSWORD)
-        server.send_message(message)
-    print('Send EMail Message')
 
 
 @auth.post('/register', name='register')

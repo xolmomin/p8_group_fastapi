@@ -1,6 +1,7 @@
 import typing as t
+from datetime import datetime
 
-from sqlalchemy import Boolean, Numeric, SmallInteger, text
+from sqlalchemy import Boolean, Numeric, SmallInteger, text, DateTime, func
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
@@ -26,6 +27,8 @@ class Users(Base):
     email: str = Column(String(50), unique=True)
     is_active: str = Column(Boolean, default=False)
     password: str = Column(String(255))
+    updated_at: datetime = Column(DateTime, onupdate=datetime.now)
+    created_at: datetime = Column(DateTime, server_default=func.now())
 
 
 class Category(Base):
