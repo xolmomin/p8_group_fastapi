@@ -3,9 +3,9 @@ from sqlalchemy.orm import sessionmaker
 
 from config import settings
 
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.DATABASE_URL, echo=True)
 
-Session = sessionmaker(engine, autoflush=False)
+Session = sessionmaker(engine, autoflush=True)
 
 
 def get_db():

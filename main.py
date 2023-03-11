@@ -41,6 +41,7 @@ manager.useRequest(app)
 def load_user(email: str):
     db = next(get_db())
     user = db.query(models.Users).where(models.Users.email == email, models.Users.is_active).first()
+    db.close()
     return user
 
 
@@ -54,6 +55,9 @@ def exc_handler(request, exc):
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request, exc):
+    if not request.state.user:
+        return RedirectResponse('/login', status.HTTP_303_SEE_OTHER)
+
     return templates.TemplateResponse('errors/404.html', {"request": request}, status.HTTP_404_NOT_FOUND)
 
 
@@ -72,7 +76,7 @@ def startup():
     app.include_router(auth)
     app.include_router(product_api)
 
-    # db = next(get_db())
+    db = next(get_db())
     # # query = update(models.Users).where(models.Users.id == 1).values(name='123')
     # # db.execute(query)
     # # db.commit()

@@ -1,9 +1,13 @@
 import os
 import shutil
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
+from sqlalchemy import delete
+from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.orm import Session
+from starlette import status
 from starlette.background import BackgroundTasks
+from starlette.responses import RedirectResponse
 
 from apps import models
 from apps.forms import ProductForm
@@ -75,3 +79,47 @@ async def product_add(
         'request': request,
     }
     return templates.TemplateResponse('products/product-add.html', context)
+
+
+async def get_or_create(db: Session, model, **kwargs) -> tuple:
+    try:
+        return db.query(model).filter_by(**kwargs).one(), False
+    except NoResultFound as e:
+        instance = model(**kwargs)
+        db.add(instance)
+        db.commit()
+    return instance, True
+
+
+async def get_or_404(db: Session, model, **kwargs):
+    try:
+        return db.query(model).filter_by(**kwargs).one()
+    except NoResultFound as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+
+
+async def create_or_delete(db: Session, model, **kwargs):
+    try:
+        instance = db.query(model).filter_by(**kwargs).one()
+    except NoResultFound as e:
+        instance = model(**kwargs)
+        db.add(instance)
+    else:
+        db.delete(instance)
+
+    db.commit()
+
+
+@product_api.get('/favorite/{pk}', name='add_favorite')
+async def product_add(
+        pk: int,
+        db: Session = Depends(get_db),
+        current_user=Depends(manager)
+):
+    product = await get_or_404(db, models.Product, id=pk)
+    favorite, created = await get_or_create(db, models.Favorite, product=product, user=current_user)
+    if not created:
+        db.delete(favorite)
+        db.commit()
+
+    return RedirectResponse('/', status.HTTP_303_SEE_OTHER)

@@ -5,7 +5,8 @@ from sqlalchemy import Boolean, Numeric, SmallInteger, text, DateTime, func
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 class_registry: t.Dict = {}
 
@@ -21,39 +22,28 @@ class Base:
         return cls.__name__.lower()
 
 
-class Users(Base):
-    id: int = Column(Integer, primary_key=True)
-    name: str = Column(String(100))
-    email: str = Column(String(50), unique=True)
-    is_active: str = Column(Boolean, default=False)
-    password: str = Column(String(255))
-    products = relationship('Product', back_populates='author')
-
-    updated_at: datetime = Column(DateTime, onupdate=datetime.now)
-    created_at: datetime = Column(DateTime, server_default=func.now())
-
-
 class Category(Base):
-    id: int = Column(Integer, primary_key=True)
-    name: str = Column(String(50), nullable=False)
-    products = relationship('Product', back_populates='category')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    products: Mapped[list['Product']] = relationship(back_populates='category', lazy='selectin')
 
 
 class Product(Base):
-    id: int = Column(Integer, primary_key=True)
-    name: str = Column(String(50), nullable=False)
-    price: float = Column(Numeric(9, 2), nullable=False)
-    discount: int = Column(SmallInteger, server_default=text('0'))
-    description: str = Column(String(512))
-    specifications: dict = Column(JSONB, server_default=text("'{}'::jsonb"))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    price: Mapped[float] = mapped_column(Numeric(9, 2), nullable=False)
+    discount: Mapped[int] = mapped_column(SmallInteger, server_default=text('0'))
+    description: Mapped[str] = mapped_column(String(512))
+    specifications: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
 
-    author_id: int = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
-    author = relationship('Users', back_populates='products')
+    author_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
+    author: Mapped['Users'] = relationship(back_populates='products')
 
-    category_id: int = Column(Integer, ForeignKey('category.id', ondelete='CASCADE'), nullable=False)
-    category = relationship('Category', back_populates='products')
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey('category.id', ondelete='CASCADE'), nullable=False)
+    category: Mapped['Category'] = relationship(back_populates='products')
 
-    images = relationship('ProductImage', back_populates='product')
+    images: Mapped[list['ProductImage']] = relationship(back_populates='product', lazy='selectin')
+    favorites: Mapped[list['Favorite']] = relationship(back_populates='product', lazy='selectin')
 
     @property
     def discount_price(self):
@@ -61,15 +51,41 @@ class Product(Base):
 
 
 class ProductImage(Base):
-    id: int = Column(Integer, primary_key=True)
-    image: str = Column(String(255))
-    product_id: int = Column(Integer, ForeignKey('product.id', ondelete='CASCADE'), nullable=False)
-    product = relationship('Product', back_populates='images')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    image: Mapped[str] = mapped_column(String(255))
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey('product.id', ondelete='CASCADE'), nullable=False)
+    product: Mapped['Product'] = relationship(back_populates='images')
+
+
+class Favorite(Base):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey('product.id', ondelete='CASCADE'), nullable=False)
+    product: Mapped['Product'] = relationship(back_populates='favorites')
+
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user: Mapped['Users'] = relationship(back_populates='favorites')
+
+
+class Users(Base):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str] = mapped_column(String(50), unique=True)
+    is_active: Mapped[str] = mapped_column(Boolean, default=False)
+    password: Mapped[str] = mapped_column(String(255))
+    favorites: Mapped[list['Favorite']] = relationship(back_populates='user', lazy='selectin')
+    products: Mapped[list['Product']] = relationship(back_populates='author', lazy='selectin')
+
+    updated_at: Mapped[datetime] = mapped_column(DateTime, onupdate=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    @hybrid_method
+    def check_favorites(self, product_id):
+        return product_id in (fav.product_id for fav in self.favorites)
 
 #
 # class Company(Base):
-#     id: int = Column(Integer, primary_key=True)
-#     name: str = Column(String(50))
+#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+#     name: str = mapped_column(String(50))
 #     employees: Mapped[list['Employee']] = relationship(
 #         'Employee',
 #         secondary=company_employee_table,
@@ -80,20 +96,20 @@ class ProductImage(Base):
 
 #
 # class Position(Base):
-#     id: int = Column(Integer, primary_key=True)
-#     name: str = Column(String(50))
+#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+#     name: str = mapped_column(String(50))
 #     employees = relationship('Employee', uselist=False, back_populates='position')
 #
 
 # class Employee(Base):
-#     id: int = Column(Integer, primary_key=True)
-#     name: str = Column(String(50))
-#     email: str = Column(String(50))
-#     address: str = Column(String(255))
-#     phone: str = Column(String(15))
-#     image: str = Column(String(255))
+#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+#     name: str = mapped_column(String(50))
+#     email: str = mapped_column(String(50))
+#     address: str = mapped_column(String(255))
+#     phone: str = mapped_column(String(15))
+#     image: str = mapped_column(String(255))
 #
-#     position_id: int = Column(Integer, ForeignKey('position.id'))
+#     position_id: Mapped[int] = mapped_column(Integer, ForeignKey('position.id'))
 #     position = relationship('Position', back_populates='employees')
 #     companies = relationship(
 #         'Company',
